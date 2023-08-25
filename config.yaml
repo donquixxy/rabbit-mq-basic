@@ -1,0 +1,21 @@
+application:
+  name: micro-company
+  server: development
+database:
+  driver: mysql
+  username: root
+  password: 12345678
+  port: 10
+  address: postgre-micro
+  databasename: postgres
+  schemas: public
+  sslmode: verify-full
+mysql:
+  driver: mysql
+  username: root
+  password: 12345678
+  port: 37899
+  address: mysql-micro
+  databasename: micro-server
+  schemas: public
+  sslmode: verify-full

@@ -1,0 +1,57 @@
+version: '3.5'
+services:
+ go-micro:
+    restart: always
+    networks:
+      - my-network
+    build: 
+      dockerfile: Dockerfile
+      context: .
+    image: go-micro-1.0.15
+    container_name: go-micro
+    depends_on:
+      - rabbitmq
+      - mysql
+      - postgre
+    ports:
+      - 8991:8991
+ mysql: 
+    container_name: mysql-micro
+    networks:
+      - my-network
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=12345678
+      - MYSQL_DATABASE=micro-server
+      - MYSQL_TCP_PORT=10891
+    ports:
+      - 37899:10891
+    expose:
+      - 37899:10891
+ postgre: 
+    container_name: postgre-micro
+    networks:
+      - my-network
+    image: postgres
+    environment:
+      - POSTGRES_USER=agusari
+      - POSTGRES_PASSWORD=12345678
+      - POSTGRES_DB=postgres
+    ports:
+      - 37892:5432
+    expose:
+      - 37892:5432
+ rabbitmq:
+    networks:
+      - my-network
+    image: rabbitmq
+    container_name: mq_container
+    ports:
+      - 37888:5672
+      - 35781:15672
+    expose:
+      - 37888:5672
+      - 35781:15672
+
+networks:
+  my-network:
