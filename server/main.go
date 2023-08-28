@@ -5,73 +5,14 @@ import (
 	"log"
 	"micro-company/config"
 	"micro-company/database/broker"
-	"micro-company/database/mysql"
 	"micro-company/database/postgre"
 	"micro-company/internal/domain"
 	"micro-company/internal/repository"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
-
-// func main() {
-
-// 	config := config.InitConfig()
-
-// 	db, _ := postgre.InitPostgreDbLocal(*config.Database)
-
-// 	mq := broker.InitBrokerSend()
-
-// 	q, err := mq.QueueDeclare("bss", false, false, false, false, nil)
-
-// 	if err != nil {
-// 		log.Fatalf("failed to declare queue %v", err)
-// 	}
-
-// 	postgre.AutoMigrate(db)
-// 	// item := &domain.Company{
-// 	// 	ID:        "91314134",
-// 	// 	Name:      "name132",
-// 	// 	Phone:     "9983",
-// 	// 	CreatedAt: time.Now(),
-// 	// 	UpdatedAt: time.Now(),
-// 	// }
-
-// 	user := &domain.User{
-// 		ID:        "1231312",
-// 		Name:      "user",
-// 		Age:       "231",
-// 		CreatedAt: time.Now(),
-// 		UpdatedAt: time.Now(),
-// 	}
-
-// 	marshall, err := json.Marshal(user)
-
-// 	if err != nil {
-// 		log.Fatalf("failed to marshall %v", err)
-// 	}
-
-// 	var u *domain.User
-// 	json.Unmarshal(marshall, &u)
-
-// 	log.Println(u)
-
-// 	headers := make(amqp091.Table)
-// 	headers["message_type"] = "user"
-
-// 	err = mq.PublishWithContext(context.Background(), "", q.Name, false, false, amqp091.Publishing{
-// 		ContentType: "application/json",
-// 		Body:        marshall,
-// 		Timestamp:   time.Now(),
-// 		Headers:     headers,
-// 	})
-
-// 	if err != nil {
-// 		log.Fatalf("failed send request %v", err)
-// 	}
-
-// 	log.Println("Successfully sent request")
-// }
 
 // =================================================================
 
@@ -82,18 +23,24 @@ func main() {
 	userRepository := repository.NewUserRepository()
 	companyRepository := repository.NewCommpanyRepository()
 
-	mysql.InitMySqlServer(config.Mysql)
-
-	db, _ := postgre.InitPostgreDb(*config.Database)
+	db, _ := postgre.InitPostgreDbLocal(*config.Database)
 
 	postgre.AutoMigrate(db)
 
-	conn := broker.InitBroker()
+	conn := broker.InitBrokerSend()
 
 	q, err := conn.QueueDeclare("bss", false, false, false, false, nil)
 
 	if err != nil {
 		log.Fatalf("failed to declare queue %v", err)
+	}
+
+	err = conn.ExchangeDeclare(
+		"logs", "fanout", true, false, false, false, nil,
+	)
+
+	if err != nil {
+		log.Fatalf("failed to get exchange declaration %v", err)
 	}
 
 	msgg, err := conn.Consume(q.Name, "", false, false, false, false, nil)
@@ -127,6 +74,8 @@ func main() {
 						log.Fatalf("failed to unmarshal user message :%v", err)
 					}
 
+					time.Sleep(time.Second * 2)
+
 					// Insert to db
 					v, err := userRepository.Create(db, user)
 
@@ -135,6 +84,8 @@ func main() {
 					}
 
 					log.Println("Success creating user :", v)
+
+					msg.Ack(false)
 
 				}
 			case "company":
@@ -149,6 +100,8 @@ func main() {
 						log.Fatalf("failed to unmarshal user company :%v", err)
 					}
 
+					time.Sleep(time.Second * 2)
+
 					// Insert to db
 					v, err := companyRepository.Create(db, company)
 
@@ -157,6 +110,8 @@ func main() {
 					}
 
 					log.Println("Success creating company :", v)
+
+					msg.Ack(false)
 				}
 			default:
 				{

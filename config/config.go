@@ -24,7 +24,7 @@ func InitConfig() *AppConfiguration {
 }
 
 func readConfig() *AppConfiguration {
-	viper.AddConfigPath("./")
+	viper.AddConfigPath("../config")
 
 	viper.SetConfigName("config")
 

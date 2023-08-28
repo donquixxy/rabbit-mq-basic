@@ -19,3 +19,5 @@ mysql:
   databasename: micro-server
   schemas: public
   sslmode: verify-full
+env:
+  mode: localhost
